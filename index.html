@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Alkol Hesaplayıcı</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
+    <label class="block mb-2 text-lg font-semibold">Alkol Türü:</label>
+    <select id="alcoholSelect" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option disabled selected>Bir içki seçiniz</option>
+      <option>Konyak</option>
+      <option>Şampanya</option>
+      <option>Rom</option>
+      <option>Single Malt Viski</option>
+      <option>Tekila</option>
+      <option>Viski</option>
+      <option>Vodka</option>
+      <option>Bira</option>
+      <option>Beyaz Şarap</option>
+      <option>Kırmızı Şarap</option>
+      <option>Brendi</option>
+    </select>
+
+    <!-- Tek Tohumluk İçkiler -->
+    <div id="singleInput" class="mt-6 hidden">
+      <label class="block mt-4 font-medium">Alınacak Tohum Sayısı:</label>
+      <input type="number" id="seedCount" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg" />
+
+      <label class="block mt-4 font-medium">Tohum Maliyeti ($):</label>
+      <input type="number" id="seedCost" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg" />
+
+      <label class="block mt-4 font-medium">Günün Satış Fiyatı ($):</label>
+      <input type="number" id="dailyPriceSingle" class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg" placeholder="(Opsiyonel)" />
+    </div>
+
+    <!-- Rom -->
+    <div id="romInputs" class="mt-6 hidden">
+      <label class="block mt-4 font-medium">Şeker Kamışı - Adet:</label>
+      <input type="number" id="sugarCount" class="w-full mt-1 px-3 py-2 border rounded-lg" />
+      <label class="block mt-2 font-medium">Şeker Kamışı - Maliyet ($):</label>
+      <input type="number" id="sugarCost" class="w-full mt-1 px-3 py-2 border rounded-lg" />
+
+      <label class="block mt-4 font-medium">Melas - Adet:</label>
+      <input type="number" id="molassesCount" class="w-full mt-1 px-3 py-2 border rounded-lg" />
+      <label class="block mt-2 font-medium">Melas - Maliyet ($):</label>
+      <input type="number" id="molassesCost" class="w-full mt-1 px-3 py-2 border rounded-lg" />
+
+      <label class="block mt-4 font-medium">Günün Satış Fiyatı ($):</label>
+      <input type="number" id="dailyPriceRom" class="w-full mt-1 px-3 py-2 border rounded-lg" placeholder="(Opsiyonel)" />
+    </div>
+
+    <!-- Bira -->
+    <div id="beerInputs" class="mt-6 hidden">
+      <label class="block mt-4 font-medium">Arpa Maltı - Adet:</label>
+      <input type="number" id="maltCount" class="w-full mt-1 px-3 py-2 border rounded-lg" />
+      <label class="block mt-2 font-medium">Arpa Maltı - Maliyet ($):</label>
+      <input type="number" id="maltCost" class="w-full mt-1 px-3 py-2 border rounded-lg" />
+
+      <label class="block mt-4 font-medium">Şerbetçi Otu - Adet:</label>
+      <input type="number" id="hopCount" class="w-full mt-1 px-3 py-2 border rounded-lg" />
+      <label class="block mt-2 font-medium">Şerbetçi Otu - Maliyet ($):</label>
+      <input type="number" id="hopCost" class="w-full mt-1 px-3 py-2 border rounded-lg" />
+
+      <label class="block mt-4 font-medium">Günün Satış Fiyatı ($):</label>
+      <input type="number" id="dailyPriceBeer" class="w-full mt-1 px-3 py-2 border rounded-lg" placeholder="(Opsiyonel)" />
+    </div>
+
+    <button id="calculateBtn" class="mt-6 w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition hidden">Hesapla</button>
+    <div id="result" class="mt-6 text-center font-semibold"></div>
+    <div id="warning" class="mt-4 text-red-600 font-semibold hidden">Geçersiz fiyat girdiniz! Lütfen min veya max fiyat giriniz.</div>
+    <div class="text-center mt-6">
+        <p class="text-sm text-gray-500">Bu sayfa <b>dejawus</b> ve <b>Yapay Zeka Asistanı: ChatGPT</b> tarafından oluşturulmuştur.</p>
+      </div>  
+</div>
+  
+
+  <script>
+    const alcoholSelect = document.getElementById("alcoholSelect");
+    const singleInput = document.getElementById("singleInput");
+    const romInputs = document.getElementById("romInputs");
+    const beerInputs = document.getElementById("beerInputs");
+    const calculateBtn = document.getElementById("calculateBtn");
+    const result = document.getElementById("result");
+    const warning = document.getElementById("warning");
+
+    const singleList = ["Konyak", "Şampanya", "Single Malt Viski", "Tekila", "Viski", "Vodka", "Beyaz Şarap", "Kırmızı Şarap", "Brendi"];
+    const fruitNeeds = {
+      "Konyak": 3, "Şampanya": 2, "Single Malt Viski": 3, "Tekila": 3, "Viski": 3, "Vodka": 3,
+      "Beyaz Şarap": 2, "Kırmızı Şarap": 2, "Brendi": 3
+    };
+
+    const priceRanges = {
+      "Konyak": [39, 90], "Şampanya": [27, 67], "Rom": [86, 224],
+      "Single Malt Viski": [49, 123], "Tekila": [67, 172], "Viski": [41, 103],
+      "Vodka": [49, 124], "Bira": [58, 150], "Beyaz Şarap": [27, 67],
+      "Kırmızı Şarap": [27, 67], "Brendi": [34, 90]
+    };
+
+    alcoholSelect.addEventListener("change", () => {
+      singleInput.classList.add("hidden");
+      romInputs.classList.add("hidden");
+      beerInputs.classList.add("hidden");
+      calculateBtn.classList.add("hidden");
+      result.innerText = "";
+      warning.classList.add("hidden");
+
+      const selected = alcoholSelect.value;
+      if (singleList.includes(selected)) singleInput.classList.remove("hidden");
+      else if (selected === "Rom") romInputs.classList.remove("hidden");
+      else if (selected === "Bira") beerInputs.classList.remove("hidden");
+
+      calculateBtn.classList.remove("hidden");
+    });
+
+    calculateBtn.addEventListener("click", () => {
+      // Uyarıyı gizle
+      warning.classList.add("hidden");
+
+      const selected = alcoholSelect.value;
+      let totalCost = 0;
+      let totalProduct = 0;
+      let dailyPrice;
+
+      if (singleList.includes(selected)) {
+        const seed = +document.getElementById("seedCount").value;
+        const cost = +document.getElementById("seedCost").value;
+        dailyPrice = +document.getElementById("dailyPriceSingle").value || null;
+
+        // Günün fiyatı doğrulaması
+        if (dailyPrice && (dailyPrice < priceRanges[selected][0] || dailyPrice > priceRanges[selected][1])) {
+          warning.classList.remove("hidden");
+          return;
+        }
+
+        totalCost = seed * cost;
+        const totalFruit = seed * 16;
+        totalProduct = Math.floor(totalFruit / fruitNeeds[selected]);
+      } else if (selected === "Rom") {
+        const sugarCount = +document.getElementById("sugarCount").value;
+        const sugarCost = +document.getElementById("sugarCost").value;
+        const molassesCount = +document.getElementById("molassesCount").value;
+        const molassesCost = +document.getElementById("molassesCost").value;
+        dailyPrice = +document.getElementById("dailyPriceRom").value || null;
+
+        // Günün fiyatı doğrulaması
+        if (dailyPrice && (dailyPrice < priceRanges["Rom"][0] || dailyPrice > priceRanges["Rom"][1])) {
+          warning.classList.remove("hidden");
+          return;
+        }
+
+        totalCost = (sugarCount * sugarCost) + (molassesCount * molassesCost);
+        const sugarFruit = sugarCount * 16;
+        const molassesFruit = molassesCount * 16;
+        totalProduct = Math.min(Math.floor(sugarFruit / 3), Math.floor(molassesFruit / 2));
+      } else if (selected === "Bira") {
+        const maltCount = +document.getElementById("maltCount").value;
+        const maltCost = +document.getElementById("maltCost").value;
+        const hopCount = +document.getElementById("hopCount").value;
+        const hopCost = +document.getElementById("hopCost").value;
+        dailyPrice = +document.getElementById("dailyPriceBeer").value || null;
+
+        // Günün fiyatı doğrulaması
+        if (dailyPrice && (dailyPrice < priceRanges["Bira"][0] || dailyPrice > priceRanges["Bira"][1])) {
+          warning.classList.remove("hidden");
+          return;
+        }
+
+        totalCost = (maltCount * maltCost) + (hopCount * hopCost);
+        const maltFruit = maltCount * 16;
+        const hopFruit = hopCount * 16;
+        totalProduct = Math.min(Math.floor(maltFruit / 2), Math.floor(hopFruit / 2));
+      }
+
+      // Su ve maya maliyetleri
+      const waterCost = 4 * totalProduct * 2; // 2 su, 4$ her biri
+      const yeastCost = 2 * totalProduct; // 1 maya, 2$ her biri
+      totalCost += waterCost + yeastCost;
+
+      const [minPrice, maxPrice] = priceRanges[selected];
+      const minProfit = (minPrice * totalProduct - totalCost).toFixed(2);
+      const maxProfit = (maxPrice * totalProduct - totalCost).toFixed(2);
+      const currentProfit = dailyPrice ? (dailyPrice * totalProduct - totalCost).toFixed(2) : null;
+
+      result.innerHTML = `
+        Üretilen ${selected} Sayısı: <b>${totalProduct}</b><br/>
+        Toplam Maliyet: <b>$${totalCost.toFixed(2)}</b><br/>
+        Minimum Kar: <b>$${minProfit}</b><br/>
+        Maksimum Kar: <b>$${maxProfit}</b><br/>
+        ${currentProfit !== null ? `Günlük Fiyata Göre Kar: <b>$${currentProfit}</b>` : ""}
+      `;
+    });
+  </script>
+</body>
+</html>
